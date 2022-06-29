@@ -5,7 +5,7 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 contract SimpleERC20 is ERC20, Ownable {
-    constructor(uint256 initialSupply) ERC20("Lab", "kvn") {
+    constructor(uint256 initialSupply) ERC20("Staked Lab Tokens", "SLT") {
         _mint(msg.sender, initialSupply);
     }
 }

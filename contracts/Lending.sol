@@ -15,6 +15,7 @@ error NotEnoughTokensToBorrow(address token);
 contract Lending is ReentrancyGuard, Ownable {
     mapping(address => address) public s_tokenToPriceFeed;
     address[] public s_allowedTokens;
+    uint256 public s_totalAllowedTokens;
 
     // user address -> token address -> deposit amount
     mapping(address => mapping(address => uint256))
@@ -22,6 +23,9 @@ contract Lending is ReentrancyGuard, Ownable {
     // user address -> token address -> borrow amount
     mapping(address => mapping(address => uint256))
         public s_accountToTokenBorrows;
+
+    // token address -> total amount
+    mapping(address => uint256) public s_totalTokenDeposits;
 
     uint256 public constant LIQUIDATION_THRESHOLD = 30;
     uint256 public constant MIN_HEALTH_FACTOR = 1e18;
@@ -59,11 +63,13 @@ contract Lending is ReentrancyGuard, Ownable {
     {
         emit Deposit(msg.sender, token, amount);
         s_accountToTokenDeposits[msg.sender][token] += amount;
+        s_totalTokenDeposits[token] += amount;
         bool success = IERC20(token).transferFrom(
             msg.sender,
             address(this),
             amount
         );
+
         if (!success) revert TransferFailed();
     }
 
@@ -86,6 +92,7 @@ contract Lending is ReentrancyGuard, Ownable {
         if (s_accountToTokenDeposits[account][token] < amount)
             revert NotEnoughFunds();
         s_accountToTokenDeposits[account][token] -= amount;
+        s_totalTokenDeposits[token] -= amount;
         bool success = IERC20(token).transfer(msg.sender, amount);
         if (!success) revert TransferFailed();
     }
@@ -120,6 +127,7 @@ contract Lending is ReentrancyGuard, Ownable {
         uint256 amount
     ) private {
         s_accountToTokenBorrows[account][token] -= amount;
+        s_totalTokenDeposits[token] -= amount;
         bool success = IERC20(token).transferFrom(
             msg.sender,
             address(this),
@@ -166,6 +174,15 @@ contract Lending is ReentrancyGuard, Ownable {
             totalBorrowsValueInEth += valueInEth;
         }
         return totalBorrowsValueInEth;
+    }
+
+    function getTokenDepositEthValue(address token)
+        public
+        view
+        returns (uint256)
+    {
+        uint256 valueInEth = getEthValue(token, s_totalTokenDeposits[token]);
+        return valueInEth;
     }
 
     function getEthValue(address token, uint256 amount)
@@ -220,6 +237,7 @@ contract Lending is ReentrancyGuard, Ownable {
         }
         if (!foundToken) {
             s_allowedTokens.push(token);
+            s_totalAllowedTokens++;
         }
         s_tokenToPriceFeed[token] = priceFeed;
         emit AllowedTokenSet(token, priceFeed);

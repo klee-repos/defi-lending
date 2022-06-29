@@ -7,8 +7,13 @@ require("@nomiclabs/hardhat-ethers");
 require("@nomiclabs/hardhat-etherscan");
 require("hardhat-gas-reporter");
 
-const { RPC_SERVER, KOVAN_URL, PRIVATE_KEY, ETHERSCAN_KEY, COINMARKETCAP_API } =
-  process.env;
+const {
+  RPC_SERVER,
+  GOERLI_SERVER,
+  PRIVATE_KEY,
+  ETHERSCAN_KEY,
+  COINMARKETCAP_API,
+} = process.env;
 
 module.exports = {
   solidity: {
@@ -23,6 +28,10 @@ module.exports = {
     hardhat: {},
     ganache: {
       url: RPC_SERVER,
+      accounts: [`${PRIVATE_KEY}`],
+    },
+    goerli: {
+      url: GOERLI_SERVER,
       accounts: [`${PRIVATE_KEY}`],
     },
   },
